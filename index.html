@@ -229,6 +229,11 @@ nav {
   box-shadow: 0 0 0 3px rgba(79,158,255,0.1);
   background: rgba(79,158,255,0.04);
 }
+.field select:focus {
+  border-color: rgba(79,158,255,0.5);
+  box-shadow: 0 0 0 3px rgba(79,158,255,0.1);
+  background: rgba(79,158,255,0.04);
+}
 .field input::placeholder { color: rgba(107,107,128,0.5); }
 .field input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.3); }
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -594,12 +599,23 @@ nav {
   font-size: 12px; color: var(--text);
   letter-spacing: 0.01em;
   transition: all 0.15s;
-  cursor: default;
+  cursor: pointer;
 }
 .schools-tags span:hover {
   border-color: rgba(79,158,255,0.4);
   background: rgba(79,158,255,0.06);
   color: var(--accent);
+}
+.schools-tags span:focus-visible {
+  outline: none;
+  border-color: rgba(79,158,255,0.6);
+  box-shadow: 0 0 0 3px rgba(79,158,255,0.12);
+}
+.schools-tags span.is-selected {
+  border-color: rgba(79,158,255,0.5);
+  background: rgba(79,158,255,0.12);
+  color: #cfe3ff;
+  box-shadow: 0 0 0 1px rgba(79,158,255,0.15) inset;
 }
 .schools-footer-note {
   margin-top: 40px;
@@ -1189,7 +1205,7 @@ footer {
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
-    <div class="footer-copy">© 2026 台灣人ㄉ學生證 · 台灣學生製作ㄉ</div>
+    <div class="footer-copy">© 2024 學生證 Wallet · 台灣學生製作</div>
     <div class="footer-links">
       <a href="#">隱私政策</a>
       <a href="#">使用說明</a>
@@ -1362,7 +1378,40 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('custom-color-input').value = btn.dataset.color;
     });
   });
+
+  document.querySelectorAll('.schools-tags span').forEach(chip => {
+    chip.tabIndex = 0;
+    chip.setAttribute('role', 'button');
+    chip.setAttribute('aria-label', `選擇學校：${chip.textContent.trim()}`);
+
+    chip.addEventListener('click', () => selectSchool(chip.textContent.trim()));
+    chip.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        selectSchool(chip.textContent.trim());
+      }
+    });
+  });
+
+  syncSelectedSchoolChip(document.getElementById('f-school').value.trim());
+  updateCard();
 });
+
+function syncSelectedSchoolChip(selectedSchool) {
+  document.querySelectorAll('.schools-tags span').forEach(chip => {
+    chip.classList.toggle('is-selected', chip.textContent.trim() === selectedSchool);
+  });
+}
+
+function selectSchool(schoolName) {
+  const schoolInput = document.getElementById('f-school');
+  schoolInput.value = schoolName;
+  syncSelectedSchoolChip(schoolName);
+  updateCard();
+  schoolInput.focus();
+  schoolInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast(`已選擇 ${schoolName}`);
+}
 
 function updateCard() {
   const name   = document.getElementById('f-name').value   || '姓名';
@@ -1381,6 +1430,7 @@ function updateCard() {
   document.getElementById('wc-city').textContent        = city;
   document.getElementById('wc-expire').textContent      = expire
     ? expire.split('-').reverse().join('/') : '—';
+  syncSelectedSchoolChip(document.getElementById('f-school').value.trim());
 
   // 自動填入校徽
   if (SCHOOL_LOGOS[school]) {
